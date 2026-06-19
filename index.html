@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Model Capability Matrix | 模型能力矩阵</title>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --card: #111827;
+  --card-hover: #1a2235;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --accent: #3b82f6;
+  --accent-2: #8b5cf6;
+  --accent-3: #10b981;
+  --border: #1f2937;
+  --radius: 12px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+/* Header */
+.header { text-align: center; padding: 40px 0 32px; }
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header p { color: var(--text-muted); font-size: 1.1rem; }
+.header .stats { display: flex; justify-content: center; gap: 32px; margin-top: 20px; flex-wrap: wrap; }
+.header .stat { text-align: center; }
+.header .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.header .stat-label { font-size: 0.85rem; color: var(--text-muted); }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.controls input[type="text"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: var(--text);
+  font-size: 0.95rem;
+  min-width: 240px;
+  outline: none;
+}
+.controls input[type="text"]:focus { border-color: var(--accent); }
+.controls select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+.controls select:focus { border-color: var(--accent); }
+.controls .btn-group { display: flex; gap: 6px; }
+.controls .btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.controls .btn:hover { border-color: var(--accent); color: var(--text); }
+.controls .btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* View Toggle */
+.view-toggle { display: flex; gap: 6px; margin-left: auto; }
+
+/* Tag filters */
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.tag-filters .tag {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-muted);
+}
+.tag-filters .tag:hover { border-color: var(--accent); color: var(--text); }
+.tag-filters .tag.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Table View */
+.table-view { overflow-x: auto; }
+.table-view table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.table-view th {
+  background: #1a2235;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.table-view th:hover { color: var(--text); }
+.table-view th.sortable::after { content: ' ↕'; opacity: 0.4; font-size: 0.75rem; }
+.table-view th.sort-asc::after { content: ' ↑'; opacity: 1; color: var(--accent); }
+.table-view th.sort-desc::after { content: ' ↓'; opacity: 1; color: var(--accent); }
+.table-view td { padding: 14px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table-view tr:hover { background: var(--card-hover); }
+.table-view tr.compare-selected { background: rgba(59, 130, 246, 0.1); }
+.table-view .model-name { display: flex; align-items: center; gap: 10px; }
+.table-view .model-name .avatar {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; color: white; flex-shrink: 0;
+}
+.table-view .model-name .info { display: flex; flex-direction: column; }
+.table-view .model-name .info .name { font-weight: 600; }
+.table-view .model-name .info .provider { font-size: 0.75rem; color: var(--text-muted); }
+.table-view .badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.badge-open { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-closed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.badge-free { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-cheap { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.badge-expensive { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.badge-premium { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+/* Capability bars */
+.cap-bar { display: flex; gap: 3px; }
+.cap-bar .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #374151;
+  transition: background 0.2s;
+}
+.cap-bar .dot.active { background: var(--accent-3); }
+.cap-bar .dot.partial { background: var(--accent); }
+.cap-bar .dot.na { background: #374151; }
+.cap-cell { display: flex; align-items: center; gap: 8px; }
+.cap-cell .cap-icon { font-size: 1rem; }
+.cap-cell .cap-label { font-size: 0.8rem; color: var(--text-muted); }
+
+/* Context length display */
+.context-val { font-family: 'SF Mono', monospace; font-size: 0.85rem; color: var(--text); }
+
+/* Card View */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.model-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+.model-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.model-card.compare-selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+.model-card .card-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.model-card .card-header .avatar {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;
+}
+.model-card .card-header .info { flex: 1; }
+.model-card .card-header .info .name { font-weight: 700; font-size: 1.1rem; }
+.model-card .card-header .info .provider { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+.model-card .card-header .badges { display: flex; gap: 6px; }
+.model-card .card-caps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.model-card .cap-item {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.model-card .cap-item .cap-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.model-card .cap-item .cap-value { font-size: 0.9rem; font-weight: 600; margin-top: 4px; }
+.model-card .card-footer {
+  display: flex; justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.model-card .card-footer .cutoff { font-size: 0.8rem; color: var(--text-muted); }
+.model-card .card-footer .compare-check {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; color: var(--text-muted);
+  cursor: pointer;
+}
+.model-card .card-footer .compare-check input { cursor: pointer; }
+
+/* Compare Panel */
+.compare-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 16px 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+}
+.compare-panel.visible { display: flex; }
+.compare-panel .compare-models { display: flex; gap: 8px; }
+.compare-panel .compare-model-tag {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.compare-panel .compare-model-tag .remove { cursor: pointer; color: var(--text-muted); }
+.compare-panel .compare-model-tag .remove:hover { color: #ef4444; }
+.compare-panel .btn-compare {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.compare-panel .btn-compare:hover { background: #2563eb; }
+.compare-panel .btn-clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.compare-panel .btn-clear:hover { border-color: #ef4444; color: #ef4444; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+}
+.modal-overlay.visible { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 900px; width: 100%;
+  max-height: 85vh; overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-header h2 { font-size: 1.3rem; font-weight: 700; }
+.modal-header .close {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 1.5rem; cursor: pointer;
+}
+.modal-header .close:hover { color: var(--text); }
+.modal-body { padding: 24px; }
+.modal-body .compare-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(var(--cols), 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.modal-body .compare-grid > div {
+  background: var(--card);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+}
+.modal-body .compare-grid .compare-header {
+  background: #1a2235;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.modal-body .compare-grid .compare-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.modal-body .compare-grid .compare-value {
+  font-size: 0.9rem;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Footer */
+.footer { text-align: center; padding: 40px 0 24px; color: var(--text-muted); font-size: 0.8rem; }
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header h1 { font-size: 1.8rem; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .controls .view-toggle { margin-left: 0; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .table-view { font-size: 0.8rem; }
+  .table-view th, .table-view td { padding: 10px 8px; }
+  .compare-panel { flex-direction: column; padding: 12px; }
+  .modal-body .compare-grid { grid-template-columns: 100px repeat(var(--cols), 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>AI Model Capability Matrix</h1>
+    <p>模型能力矩阵 — 全方位对比主流AI模型的核心能力维度</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Models</div></div>
+      <div class="stat"><div class="stat-value" id="stat-providers">0</div><div class="stat-label">Providers</div></div>
+      <div class="stat"><div class="stat-value" id="stat-dimensions">8</div><div class="stat-label">Dimensions</div></div>
+      <div class="stat"><div class="stat-value" id="stat-open">0</div><div class="stat-label">Open Source</div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="搜索模型名称..." />
+    <select id="providerFilter">
+      <option value="all">所有厂商</option>
+    </select>
+    <div class="btn-group" id="typeFilter">
+      <button class="btn active" data-type="all">全部</button>
+      <button class="btn" data-type="open">开源</button>
+      <button class="btn" data-type="closed">闭源</button>
+    </div>
+    <div class="view-toggle">
+      <button class="btn active" id="viewTable">📋 表格</button>
+      <button class="btn" id="viewCards">🃏 卡片</button>
+    </div>
+  </div>
+
+  <div class="tag-filters" id="capFilters">
+    <span class="tag active" data-cap="all">全部能力</span>
+    <span class="tag" data-cap="multimodal">🖼️ 多模态</span>
+    <span class="tag" data-cap="reasoning">🧠 深度推理</span>
+    <span class="tag" data-cap="code">💻 代码</span>
+    <span class="tag" data-cap="agent">🤖 Agent</span>
+    <span class="tag" data-cap="long-context">📚 长上下文</span>
+    <span class="tag" data-cap="fast">⚡ 快速响应</span>
+  </div>
+
+  <div id="contentArea"></div>
+
+  <div class="footer">
+    <p>数据更新于 2026-06-19 | 模型参数来自官方文档与公开评测 | <a href="https://github.com/seanliii/ai-model-capability-matrix">GitHub</a></p>
+  </div>
+</div>
+
+<!-- Compare Panel -->
+<div class="compare-panel" id="comparePanel">
+  <div class="compare-models" id="compareModels"></div>
+  <button class="btn-compare" id="btnCompare">🔍 对比</button>
+  <button class="btn-clear" id="btnClear">清除</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2>模型对比</h2>
+      <button class="close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const models = [
+  { id: 'gpt-5-4', name: 'GPT-5.4', provider: 'OpenAI', open: false, context: 256000, multimodal: 3, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'expensive', cutoff: '2026-03', desc: 'OpenAI旗舰模型，多模态推理均衡' },
+  { id: 'gpt-5', name: 'GPT-5', provider: 'OpenAI', open: false, context: 200000, multimodal: 3, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'expensive', cutoff: '2026-03', desc: 'OpenAI主力模型，全面增强' },
+  { id: 'gpt-4-1', name: 'GPT-4.1', provider: 'OpenAI', open: false, context: 256000, multimodal: 3, reasoning: 3, code: 3, agent: 2, speed: 2, pricing: 'expensive', cutoff: '2025-08', desc: '高上下文，多模态能力强' },
+  { id: 'o3', name: 'o3', provider: 'OpenAI', open: false, context: 200000, multimodal: 1, reasoning: 3, code: 3, agent: 2, speed: 1, pricing: 'premium', cutoff: '2025-05', desc: '推理专用模型，STEM顶尖' },
+  { id: 'o4-mini', name: 'o4-mini', provider: 'OpenAI', open: false, context: 200000, multimodal: 1, reasoning: 3, code: 3, agent: 2, speed: 2, pricing: 'cheap', cutoff: '2025-05', desc: '高性价比推理模型' },
+  { id: 'claude-opus-4', name: 'Claude Opus 4', provider: 'Anthropic', open: false, context: 200000, multimodal: 2, reasoning: 3, code: 3, agent: 3, speed: 1, pricing: 'premium', cutoff: '2026-02', desc: 'Anthropic最强模型，代码与推理顶级' },
+  { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'Anthropic', open: false, context: 200000, multimodal: 2, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'expensive', cutoff: '2026-02', desc: '均衡旗舰，速度与质量兼顾' },
+  { id: 'claude-haiku-4', name: 'Claude Haiku 4', provider: 'Anthropic', open: false, context: 200000, multimodal: 2, reasoning: 2, code: 2, agent: 2, speed: 3, pricing: 'cheap', cutoff: '2026-02', desc: '极速响应，成本最低' },
+  { id: 'gemini-3-1-pro', name: 'Gemini 3.1 Pro', provider: 'Google', open: false, context: 2000000, multimodal: 3, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'expensive', cutoff: '2026-05', desc: '200万上下文，多模态原生' },
+  { id: 'gemini-2-5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', open: false, context: 1000000, multimodal: 3, reasoning: 3, code: 3, agent: 2, speed: 2, pricing: 'expensive', cutoff: '2025-11', desc: '百万上下文，长文档之王' },
+  { id: 'gemini-2-5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', open: false, context: 1000000, multimodal: 3, reasoning: 2, code: 2, agent: 2, speed: 3, pricing: 'cheap', cutoff: '2025-11', desc: '高性价比，速度优先' },
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', open: false, context: 131072, multimodal: 2, reasoning: 3, code: 3, agent: 2, speed: 2, pricing: 'expensive', cutoff: '2026-02', desc: 'xAI旗舰，实时数据+推理' },
+  { id: 'deepseek-v3-1', name: 'DeepSeek V3.1', provider: 'DeepSeek', open: true, context: 64000, multimodal: 1, reasoning: 2, code: 3, agent: 1, speed: 3, pricing: 'free', cutoff: '2025-12', desc: '开源最强通用模型之一' },
+  { id: 'deepseek-r1-1', name: 'DeepSeek R1.1', provider: 'DeepSeek', open: true, context: 64000, multimodal: 1, reasoning: 3, code: 3, agent: 1, speed: 1, pricing: 'free', cutoff: '2025-12', desc: '开源推理模型标杆' },
+  { id: 'qwen3-max', name: 'Qwen3 Max', provider: 'Alibaba', open: true, context: 128000, multimodal: 3, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'cheap', cutoff: '2026-04', desc: '阿里最强模型，开源+闭源双版本' },
+  { id: 'qwen3-coder', name: 'Qwen3 Coder', provider: 'Alibaba', open: true, context: 128000, multimodal: 1, reasoning: 2, code: 3, agent: 2, speed: 2, pricing: 'free', cutoff: '2026-04', desc: '开源代码专用模型' },
+  { id: 'llama-4-maverick', name: 'Llama 4 Maverick', provider: 'Meta', open: true, context: 256000, multimodal: 3, reasoning: 2, code: 2, agent: 2, speed: 2, pricing: 'free', cutoff: '2025-10', desc: 'Meta开源多模态旗舰' },
+  { id: 'llama-4-scout', name: 'Llama 4 Scout', provider: 'Meta', open: true, context: 10000000, multimodal: 2, reasoning: 2, code: 2, agent: 1, speed: 3, pricing: 'free', cutoff: '2025-10', desc: '1000万上下文，开源最长' },
+  { id: 'mistral-large', name: 'Mistral Large', provider: 'Mistral', open: false, context: 128000, multimodal: 1, reasoning: 2, code: 2, agent: 2, speed: 2, pricing: 'expensive', cutoff: '2025-09', desc: '欧洲最强闭源模型' },
+  { id: 'mistral-small', name: 'Mistral Small', provider: 'Mistral', open: true, context: 128000, multimodal: 1, reasoning: 2, code: 2, agent: 1, speed: 3, pricing: 'free', cutoff: '2025-09', desc: '开源轻量高效模型' },
+  { id: 'kimi-k2', name: 'Kimi K2', provider: 'Moonshot', open: true, context: 256000, multimodal: 2, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'cheap', cutoff: '2026-04', desc: 'Moonshot K2，开源强推理' },
+  { id: 'kimi-k2-5', name: 'Kimi K2.5', provider: 'Moonshot', open: false, context: 256000, multimodal: 3, reasoning: 3, code: 3, agent: 3, speed: 2, pricing: 'expensive', cutoff: '2026-04', desc: 'Moonshot闭源旗舰' },
+  { id: 'minimax-m2-5', name: 'MiniMax M2.5', provider: 'MiniMax', open: true, context: 100000, multimodal: 2, reasoning: 2, code: 2, agent: 2, speed: 2, pricing: 'free', cutoff: '2025-11', desc: 'MiniMax开源模型' },
+  { id: 'seed-1', name: 'Seed-1', provider: 'ByteDance', open: true, context: 128000, multimodal: 2, reasoning: 2, code: 2, agent: 2, speed: 3, pricing: 'free', cutoff: '2025-08', desc: '字节跳动开源模型' },
+  { id: 'yi-large', name: 'Yi-Large', provider: '01.AI', open: true, context: 200000, multimodal: 1, reasoning: 2, code: 2, agent: 1, speed: 2, pricing: 'cheap', cutoff: '2025-06', desc: '李开复01.AI开源模型' },
+  { id: 'nova-pro', name: 'Nova Pro', provider: 'Amazon', open: false, context: 300000, multimodal: 2, reasoning: 2, code: 2, agent: 2, speed: 2, pricing: 'cheap', cutoff: '2025-10', desc: 'AWS Bedrock旗舰模型' },
+  { id: 'command-r-plus', name: 'Command R+', provider: 'Cohere', open: true, context: 128000, multimodal: 1, reasoning: 2, code: 2, agent: 2, speed: 2, pricing: 'free', cutoff: '2025-08', desc: 'Cohere开源企业模型' },
+  { id: 'phi-4', name: 'Phi-4', provider: 'Microsoft', open: true, context: 16000, multimodal: 1, reasoning: 2, code: 2, agent: 1, speed: 3, pricing: 'free', cutoff: '2025-04', desc: '微软小参数高效模型' },
+  { id: 'step-2', name: 'Step-2', provider: 'StepFun', open: false, context: 64000, multimodal: 1, reasoning: 2, code: 2, agent: 1, speed: 2, pricing: 'cheap', cutoff: '2025-07', desc: '阶跃星辰闭源模型' }
+];
+
+const providerColors = {
+  'OpenAI': '#10a37f', 'Anthropic': '#d97757', 'Google': '#4285f4', 'xAI': '#1d9bf0',
+  'DeepSeek': '#4f46e5', 'Alibaba': '#ff6a00', 'Meta': '#0668e1', 'Mistral': '#f97316',
+  'Moonshot': '#3b82f6', 'MiniMax': '#06b6d4', 'ByteDance': '#fe2c55', '01.AI': '#22c55e',
+  'Amazon': '#ff9900', 'Cohere': '#d1fae5', 'Microsoft': '#00a4ef', 'StepFun': '#8b5cf6'
+};
+
+const providerIcons = {
+  'OpenAI': 'OA', 'Anthropic': 'An', 'Google': 'Go', 'xAI': 'xA',
+  'DeepSeek': 'DS', 'Alibaba': 'Al', 'Meta': 'Me', 'Mistral': 'Mi',
+  'Moonshot': 'MS', 'MiniMax': 'MM', 'ByteDance': 'BD', '01.AI': '01',
+  'Amazon': 'Am', 'Cohere': 'Co', 'Microsoft': 'Ms', 'StepFun': 'SF'
+};
+
+const capLabels = {
+  multimodal: '多模态', reasoning: '深度推理', code: '代码', agent: 'Agent', speed: '响应速度'
+};
+
+const capIcons = {
+  multimodal: '🖼️', reasoning: '🧠', code: '💻', agent: '🤖', speed: '⚡'
+};
+
+// ===== STATE =====
+let currentView = 'table';
+let sortCol = null;
+let sortDir = 'asc';
+let searchTerm = '';
+let providerFilter = 'all';
+let typeFilter = 'all';
+let capFilter = 'all';
+let compareList = [];
+
+// ===== INIT =====
+function init() {
+  populateProviders();
+  updateStats();
+  render();
+  bindEvents();
+}
+
+function populateProviders() {
+  const providers = [...new Set(models.map(m => m.provider))].sort();
+  const sel = document.getElementById('providerFilter');
+  providers.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = models.length;
+  document.getElementById('stat-providers').textContent = new Set(models.map(m => m.provider)).size;
+  document.getElementById('stat-open').textContent = models.filter(m => m.open).length;
+}
+
+function getFiltered() {
+  let list = [...models];
+  if (searchTerm) {
+    list = list.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.provider.toLowerCase().includes(searchTerm.toLowerCase()) || m.desc.toLowerCase().includes(searchTerm.toLowerCase()));
+  }
+  if (providerFilter !== 'all') {
+    list = list.filter(m => m.provider === providerFilter);
+  }
+  if (typeFilter !== 'all') {
+    list = list.filter(m => typeFilter === 'open' ? m.open : !m.open);
+  }
+  if (capFilter !== 'all') {
+    if (capFilter === 'long-context') {
+      list = list.filter(m => m.context >= 200000);
+    } else if (capFilter === 'fast') {
+      list = list.filter(m => m.speed >= 3);
+    } else {
+      list = list.filter(m => m[capFilter] >= 3);
+    }
+  }
+  if (sortCol) {
+    list.sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (typeof va === 'string') va = va.toLowerCase(), vb = vb.toLowerCase();
+      if (va === vb) return 0;
+      const res = va < vb ? -1 : 1;
+      return sortDir === 'asc' ? res : -res;
+    });
+  }
+  return list;
+}
+
+function formatContext(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+  return n.toString();
+}
+
+function renderDots(val) {
+  let html = '<div class="cap-bar">';
+  for (let i = 0; i < 3; i++) {
+    html += '<span class="dot ' + (i < val ? 'active' : 'na') + '"></span>';
+  }
+  return html + '</div>';
+}
+
+function renderSpeed(val) {
+  const labels = ['', '慢', '中', '快'];
+  return '<span style="color:' + (val === 3 ? '#10b981' : val === 2 ? '#f59e0b' : '#ef4444') + '">' + labels[val] + '</span>';
+}
+
+function renderPricing(p) {
+  const map = { free: '免费', cheap: '低价', expensive: '高价', premium: ' premium' };
+  return '<span class="badge badge-' + p + '">' + map[p] + '</span>';
+}
+
+function render() {
+  const list = getFiltered();
+  const area = document.getElementById('contentArea');
+  if (currentView === 'table') {
+    area.innerHTML = renderTable(list);
+  } else {
+    area.innerHTML = renderCards(list);
+  }
+}
+
+function renderTable(list) {
+  let html = '<div class="table-view"><table><thead><tr>';
+  const headers = [
+    { key: 'name', label: '模型', sort: true },
+    { key: 'provider', label: '厂商', sort: true },
+    { key: 'context', label: '上下文', sort: true },
+    { key: 'multimodal', label: '多模态', sort: true },
+    { key: 'reasoning', label: '推理', sort: true },
+    { key: 'code', label: '代码', sort: true },
+    { key: 'agent', label: 'Agent', sort: true },
+    { key: 'speed', label: '速度', sort: true },
+    { key: 'pricing', label: '定价', sort: true },
+    { key: 'cutoff', label: '知识截止', sort: true }
+  ];
+  headers.forEach(h => {
+    let cls = 'sortable';
+    if (sortCol === h.key) cls += ' sort-' + sortDir;
+    html += '<th class="' + cls + '" data-sort="' + h.key + '">' + h.label + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  list.forEach(m => {
+    const isCompare = compareList.includes(m.id);
+    html += '<tr class="' + (isCompare ? 'compare-selected' : '') + '" data-id="' + m.id + '">';
+    html += '<td><div class="model-name"><div class="avatar" style="background:' + providerColors[m.provider] + '">' + providerIcons[m.provider] + '</div><div class="info"><span class="name">' + m.name + '</span><span class="provider">' + m.provider + '</span></div></div></td>';
+    html += '<td>' + m.provider + '</td>';
+    html += '<td><span class="context-val">' + formatContext(m.context) + '</span></td>';
+    html += '<td>' + renderDots(m.multimodal) + '</td>';
+    html += '<td>' + renderDots(m.reasoning) + '</td>';
+    html += '<td>' + renderDots(m.code) + '</td>';
+    html += '<td>' + renderDots(m.agent) + '</td>';
+    html += '<td>' + renderSpeed(m.speed) + '</td>';
+    html += '<td>' + renderPricing(m.pricing) + '</td>';
+    html += '<td><span class="context-val">' + m.cutoff + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderCards(list) {
+  let html = '<div class="cards-grid">';
+  list.forEach(m => {
+    const isCompare = compareList.includes(m.id);
+    html += '<div class="model-card ' + (isCompare ? 'compare-selected' : '') + '" data-id="' + m.id + '">';
+    html += '<div class="card-header"><div class="avatar" style="background:' + providerColors[m.provider] + '">' + providerIcons[m.provider] + '</div><div class="info"><div class="name">' + m.name + '</div><div class="provider">' + m.provider + '</div></div><div class="badges">' + (m.open ? '<span class="badge badge-open">开源</span>' : '<span class="badge badge-closed">闭源</span>') + '</div></div>';
+    html += '<div class="card-caps">';
+    html += '<div class="cap-item"><div class="cap-label">上下文</div><div class="cap-value">' + formatContext(m.context) + '</div></div>';
+    html += '<div class="cap-item"><div class="cap-label">多模态</div><div class="cap-value">' + renderDots(m.multimodal) + '</div></div>';
+    html += '<div class="cap-item"><div class="cap-label">深度推理</div><div class="cap-value">' + renderDots(m.reasoning) + '</div></div>';
+    html += '<div class="cap-item"><div class="cap-label">代码</div><div class="cap-value">' + renderDots(m.code) + '</div></div>';
+    html += '<div class="cap-item"><div class="cap-label">Agent</div><div class="cap-value">' + renderDots(m.agent) + '</div></div>';
+    html += '<div class="cap-item"><div class="cap-label">响应速度</div><div class="cap-value">' + renderSpeed(m.speed) + '</div></div>';
+    html += '</div>';
+    html += '<div class="card-footer"><span class="cutoff">知识截止: ' + m.cutoff + '</span><label class="compare-check"><input type="checkbox" ' + (isCompare ? 'checked' : '') + ' data-id="' + m.id + '"> 对比</label></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderComparePanel() {
+  const panel = document.getElementById('comparePanel');
+  const modelsEl = document.getElementById('compareModels');
+  if (compareList.length === 0) {
+    panel.classList.remove('visible');
+    return;
+  }
+  panel.classList.add('visible');
+  let html = '';
+  compareList.forEach(id => {
+    const m = models.find(x => x.id === id);
+    html += '<div class="compare-model-tag"><span>' + m.name + '</span><span class="remove" data-id="' + id + '">&times;</span></div>';
+  });
+  modelsEl.innerHTML = html;
+}
+
+function showCompareModal() {
+  const selected = models.filter(m => compareList.includes(m.id));
+  if (selected.length < 2) return;
+  const cols = selected.length;
+  const attrs = [
+    { key: 'provider', label: '厂商' },
+    { key: 'open', label: '开源', fmt: v => v ? '✅' : '❌' },
+    { key: 'context', label: '上下文', fmt: v => formatContext(v) },
+    { key: 'multimodal', label: '多模态', fmt: v => renderDots(v) },
+    { key: 'reasoning', label: '深度推理', fmt: v => renderDots(v) },
+    { key: 'code', label: '代码', fmt: v => renderDots(v) },
+    { key: 'agent', label: 'Agent', fmt: v => renderDots(v) },
+    { key: 'speed', label: '响应速度', fmt: v => renderSpeed(v) },
+    { key: 'pricing', label: '定价', fmt: v => renderPricing(v) },
+    { key: 'cutoff', label: '知识截止' },
+    { key: 'desc', label: '简介' }
+  ];
+  let html = '<div class="compare-grid" style="--cols:' + cols + '">';
+  html += '<div class="compare-header"></div>';
+  selected.forEach(m => {
+    html += '<div class="compare-header" style="justify-content:center">' + m.name + '</div>';
+  });
+  attrs.forEach(a => {
+    html += '<div class="compare-label">' + a.label + '</div>';
+    selected.forEach(m => {
+      let val = m[a.key];
+      if (a.fmt) val = a.fmt(val);
+      html += '<div class="compare-value">' + val + '</div>';
+    });
+  });
+  html += '</div>';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function bindEvents() {
+  document.getElementById('searchInput').addEventListener('input', e => { searchTerm = e.target.value; render(); });
+  document.getElementById('providerFilter').addEventListener('change', e => { providerFilter = e.target.value; render(); });
+  document.getElementById('typeFilter').addEventListener('click', e => {
+    if (e.target.classList.contains('btn')) {
+      document.querySelectorAll('#typeFilter .btn').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      typeFilter = e.target.dataset.type;
+      render();
+    }
+  });
+  document.getElementById('capFilters').addEventListener('click', e => {
+    if (e.target.classList.contains('tag')) {
+      document.querySelectorAll('#capFilters .tag').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      capFilter = e.target.dataset.cap;
+      render();
+    }
+  });
+  document.getElementById('viewTable').addEventListener('click', () => { currentView = 'table'; toggleView(); render(); });
+  document.getElementById('viewCards').addEventListener('click', () => { currentView = 'cards'; toggleView(); render(); });
+  document.getElementById('contentArea').addEventListener('click', e => {
+    const row = e.target.closest('tr[data-id]');
+    const card = e.target.closest('.model-card[data-id]');
+    if (row) toggleCompare(row.dataset.id);
+    if (card && !e.target.closest('input[type="checkbox"]')) toggleCompare(card.dataset.id);
+    if (e.target.closest('input[type="checkbox"]')) {
+      const id = e.target.closest('input').dataset.id;
+      if (id) toggleCompare(id);
+    }
+  });
+  document.getElementById('contentArea').addEventListener('click', e => {
+    const th = e.target.closest('th[data-sort]');
+    if (th) {
+      const col = th.dataset.sort;
+      if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortCol = col; sortDir = 'desc'; }
+      render();
+    }
+  });
+  document.getElementById('compareModels').addEventListener('click', e => {
+    if (e.target.classList.contains('remove')) {
+      toggleCompare(e.target.dataset.id);
+    }
+  });
+  document.getElementById('btnCompare').addEventListener('click', showCompareModal);
+  document.getElementById('btnClear').addEventListener('click', () => { compareList = []; renderComparePanel(); render(); });
+  document.getElementById('modalClose').addEventListener('click', () => document.getElementById('modalOverlay').classList.remove('visible'));
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('visible');
+  });
+}
+
+function toggleView() {
+  document.getElementById('viewTable').classList.toggle('active', currentView === 'table');
+  document.getElementById('viewCards').classList.toggle('active', currentView === 'cards');
+}
+
+function toggleCompare(id) {
+  if (compareList.includes(id)) {
+    compareList = compareList.filter(x => x !== id);
+  } else {
+    if (compareList.length >= 4) { alert('最多对比4个模型'); return; }
+    compareList.push(id);
+  }
+  renderComparePanel();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
